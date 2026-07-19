@@ -22,6 +22,7 @@ fi
 
 find "$PAGES_DIR" -mindepth 1 -maxdepth 1 ! -name ".git" ! -name "previews" -exec rm -rf {} +
 cp -a "$BUILD_DIR"/. "$PAGES_DIR"/
+touch "$PAGES_DIR/.nojekyll"
 
 if [[ -n "$(git -C "$PAGES_DIR" status --porcelain)" ]]; then
   git -C "$PAGES_DIR" add -A
