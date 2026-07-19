@@ -9,6 +9,7 @@ on:
       - closed
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
 
@@ -87,6 +88,17 @@ jobs:
         shell: pwsh
         run: |
           ./scripts/publish-pr-preview.ps1 -BuildDir _site -PrNumber "${{ github.event.number }}" -PrAction "closed"
+
+      - name: Delete preview environment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const environmentName = `pr-preview-${context.issue.number}`;
+            await github.request("DELETE /repos/{owner}/{repo}/environments/{environment_name}", {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment_name: environmentName
+            });
 
       - name: Comment preview removed
         uses: actions/github-script@v7
