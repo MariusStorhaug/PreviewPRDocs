@@ -36,24 +36,48 @@ touch "$PAGES_DIR/.nojekyll"
 
 PREVIEW_DIR="$PAGES_DIR/previews/pr-$PR_NUMBER"
 
-if [[ "$PR_ACTION" == "closed" ]]; then
-  rm -rf "$PREVIEW_DIR"
-  COMMIT_MESSAGE="Remove preview for PR #$PR_NUMBER"
-else
-  if [[ ! -d "$BUILD_DIR" ]]; then
-    echo "Build directory '$BUILD_DIR' does not exist." >&2
-    exit 1
-  fi
-  rm -rf "$PREVIEW_DIR"
-  mkdir -p "$PREVIEW_DIR"
-  cp -a "$BUILD_DIR"/. "$PREVIEW_DIR"/
-  COMMIT_MESSAGE="Update preview for PR #$PR_NUMBER"
+if [[ "$PR_ACTION" != "closed" && ! -d "$BUILD_DIR" ]]; then
+  echo "Build directory '$BUILD_DIR' does not exist." >&2
+  exit 1
 fi
 
-if [[ -n "$(git -C "$PAGES_DIR" status --porcelain)" ]]; then
+for attempt in 1 2 3; do
+  if [[ "$attempt" -gt 1 ]]; then
+    git fetch origin gh-pages || true
+    if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+      git -C "$PAGES_DIR" fetch origin gh-pages
+      git -C "$PAGES_DIR" reset --hard origin/gh-pages
+    fi
+  fi
+
+  touch "$PAGES_DIR/.nojekyll"
+
+  if [[ "$PR_ACTION" == "closed" ]]; then
+    rm -rf "$PREVIEW_DIR"
+    COMMIT_MESSAGE="Remove preview for PR #$PR_NUMBER"
+  else
+    rm -rf "$PREVIEW_DIR"
+    mkdir -p "$PREVIEW_DIR"
+    cp -a "$BUILD_DIR"/. "$PREVIEW_DIR"/
+    COMMIT_MESSAGE="Update preview for PR #$PR_NUMBER"
+  fi
+
+  if [[ -z "$(git -C "$PAGES_DIR" status --porcelain)" ]]; then
+    echo "No preview changes to publish."
+    exit 0
+  fi
+
   git -C "$PAGES_DIR" add -A
   git -C "$PAGES_DIR" commit -m "$COMMIT_MESSAGE"
-  git -C "$PAGES_DIR" push origin HEAD:gh-pages
-else
-  echo "No preview changes to publish."
-fi
+
+  if git -C "$PAGES_DIR" push origin HEAD:gh-pages; then
+    exit 0
+  fi
+
+  if [[ "$attempt" -eq 3 ]]; then
+    echo "Failed to push preview update after 3 attempts." >&2
+    exit 1
+  fi
+
+  echo "Push failed due to concurrent update, retrying..."
+done
