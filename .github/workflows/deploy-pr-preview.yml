@@ -42,6 +42,7 @@ jobs:
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          PREVIEW_ENV_ADMIN_TOKEN: ${{ secrets.PREVIEW_ENV_ADMIN_TOKEN }}
         run: |
           ./scripts/sync-pr-preview-environment.ps1 -PrNumber "${{ github.event.number }}" -PrAction "${{ github.event.action }}"
 
