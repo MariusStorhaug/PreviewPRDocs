@@ -11,6 +11,8 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  deployments: write
+  actions: write
 
 concurrency:
   group: pages-pr-${{ github.event.number }}
@@ -39,6 +41,13 @@ jobs:
         shell: pwsh
         run: |
           ./scripts/publish-pr-preview.ps1 -BuildDir _site -PrNumber "${{ github.event.number }}" -PrAction "${{ github.event.action }}"
+
+      - name: Sync preview environment
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ./scripts/sync-pr-preview-environment.ps1 -PrNumber "${{ github.event.number }}" -PrAction "${{ github.event.action }}"
 
       - name: Comment preview URL
         if: github.event.action != 'closed'
