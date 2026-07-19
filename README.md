@@ -12,5 +12,5 @@ GitHub Pages demo that keeps **live** content on the default URL while publishin
 
 ## Zensical integration
 
-This template currently copies `site/` into `_site/` for deployment.
+This template currently copies `site/` into `_site/` for deployment using PowerShell workflow steps.
 Replace the build step in both workflow files with your Zensical command that outputs to `_site/`.

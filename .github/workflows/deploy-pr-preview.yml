@@ -28,15 +28,17 @@ jobs:
 
       - name: Build site
         if: github.event.action != 'closed'
+        shell: pwsh
         run: |
-          mkdir -p _site
-          cp -R site/. _site/
+          New-Item -ItemType Directory -Path _site -Force | Out-Null
+          Copy-Item -Path "site/*" -Destination _site -Recurse -Force
           # Replace with Zensical, for example:
           # zensical build --output _site
 
       - name: Publish or remove preview
+        shell: pwsh
         run: |
-          bash scripts/publish-pr-preview.sh _site "${{ github.event.number }}" "${{ github.event.action }}"
+          ./scripts/publish-pr-preview.ps1 -BuildDir _site -PrNumber "${{ github.event.number }}" -PrAction "${{ github.event.action }}"
 
       - name: Comment preview URL
         if: github.event.action != 'closed'
