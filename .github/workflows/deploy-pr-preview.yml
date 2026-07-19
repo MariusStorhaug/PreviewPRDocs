@@ -18,7 +18,11 @@ concurrency:
 
 jobs:
   preview:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
+    environment:
+      name: pr-preview-${{ github.event.number }}
+      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/previews/pr-${{ github.event.number }}/
 
     steps:
       - name: Checkout
@@ -27,7 +31,6 @@ jobs:
           fetch-depth: 0
 
       - name: Build site
-        if: github.event.action != 'closed'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path _site -Force | Out-Null
@@ -41,7 +44,6 @@ jobs:
           ./scripts/publish-pr-preview.ps1 -BuildDir _site -PrNumber "${{ github.event.number }}" -PrAction "${{ github.event.action }}"
 
       - name: Comment preview URL
-        if: github.event.action != 'closed'
         uses: actions/github-script@v7
         with:
           script: |
@@ -71,8 +73,22 @@ jobs:
               });
             }
 
+  preview-cleanup:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove preview
+        shell: pwsh
+        run: |
+          ./scripts/publish-pr-preview.ps1 -BuildDir _site -PrNumber "${{ github.event.number }}" -PrAction "closed"
+
       - name: Comment preview removed
-        if: github.event.action == 'closed'
         uses: actions/github-script@v7
         with:
           script: |
