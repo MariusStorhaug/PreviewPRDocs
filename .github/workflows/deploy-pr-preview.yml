@@ -8,11 +8,7 @@ on:
       - reopened
       - closed
 
-permissions:
-  contents: write
-  pull-requests: write
-  deployments: write
-  actions: write
+permissions: write-all
 
 concurrency:
   group: pages-pr-${{ github.event.number }}
