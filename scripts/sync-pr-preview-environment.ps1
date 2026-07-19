@@ -98,7 +98,7 @@ if ($PrAction -eq "closed") {
         if ($statusCode -eq 404) {
             Write-Host "Environment '$environmentName' does not exist."
         } elseif ($statusCode -eq 403 -and [string]::IsNullOrWhiteSpace($env:PREVIEW_ENV_ADMIN_TOKEN)) {
-            throw "Failed to delete environment '$environmentName' with GITHUB_TOKEN. Set repository secret PREVIEW_ENV_ADMIN_TOKEN with a token that can administer repository environments."
+            throw "Failed to delete environment '$environmentName' with GITHUB_TOKEN. Configure GitHub App secrets PREVIEW_APP_ID and PREVIEW_APP_PRIVATE_KEY, or set PREVIEW_ENV_ADMIN_TOKEN with a token that can administer repository environments."
         } else {
             throw "Failed to delete environment '$environmentName': $($_.Exception.Message)"
         }
