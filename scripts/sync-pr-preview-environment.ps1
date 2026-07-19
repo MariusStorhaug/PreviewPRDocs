@@ -26,11 +26,10 @@ $repo = $repoParts[1]
 $environmentName = "pr-preview-$PrNumber"
 $previewUrl = "https://$($owner.ToLowerInvariant()).github.io/$repo/previews/pr-$PrNumber/"
 $runUrl = "$($env:GITHUB_SERVER_URL)/$($env:GITHUB_REPOSITORY)/actions/runs/$($env:GITHUB_RUN_ID)"
-
-$headers = @{
-    Authorization = "Bearer $($env:GITHUB_TOKEN)"
-    Accept = "application/vnd.github+json"
-    "X-GitHub-Api-Version" = "2022-11-28"
+$environmentDeleteToken = if ([string]::IsNullOrWhiteSpace($env:PREVIEW_ENV_ADMIN_TOKEN)) {
+    $env:GITHUB_TOKEN
+} else {
+    $env:PREVIEW_ENV_ADMIN_TOKEN
 }
 
 function Invoke-GitHubApi {
@@ -40,8 +39,15 @@ function Invoke-GitHubApi {
         [string]$Method,
         [Parameter(Mandatory = $true)]
         [string]$Uri,
-        [object]$Body
+        [object]$Body,
+        [string]$Token = $env:GITHUB_TOKEN
     )
+
+    $headers = @{
+        Authorization = "Bearer $Token"
+        Accept = "application/vnd.github+json"
+        "X-GitHub-Api-Version" = "2022-11-28"
+    }
 
     $invokeParams = @{
         Method = $Method
@@ -85,12 +91,14 @@ if ($PrAction -eq "closed") {
 
     $encodedEnvironmentName = [System.Uri]::EscapeDataString($environmentName)
     try {
-        Invoke-GitHubApi -Method "DELETE" -Uri "$baseUrl/environments/$encodedEnvironmentName" | Out-Null
+        Invoke-GitHubApi -Method "DELETE" -Uri "$baseUrl/environments/$encodedEnvironmentName" -Token $environmentDeleteToken | Out-Null
         Write-Host "Deleted environment '$environmentName'."
     } catch {
         $statusCode = Get-HttpStatusCode -ErrorRecord $_
         if ($statusCode -eq 404) {
             Write-Host "Environment '$environmentName' does not exist."
+        } elseif ($statusCode -eq 403 -and [string]::IsNullOrWhiteSpace($env:PREVIEW_ENV_ADMIN_TOKEN)) {
+            throw "Failed to delete environment '$environmentName' with GITHUB_TOKEN. Set repository secret PREVIEW_ENV_ADMIN_TOKEN with a token that can administer repository environments."
         } else {
             throw "Failed to delete environment '$environmentName': $($_.Exception.Message)"
         }
