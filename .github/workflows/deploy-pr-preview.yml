@@ -9,8 +9,8 @@ on:
       - closed
 
 permissions:
-  actions: write
   contents: write
+  environments: write
   pull-requests: write
 
 concurrency:
