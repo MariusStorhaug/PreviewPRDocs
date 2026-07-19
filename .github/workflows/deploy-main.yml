@@ -23,11 +23,13 @@ jobs:
           fetch-depth: 0
 
       - name: Build site
+        shell: pwsh
         run: |
-          mkdir -p _site
-          cp -R site/. _site/
+          New-Item -ItemType Directory -Path _site -Force | Out-Null
+          Copy-Item -Path "site/*" -Destination _site -Recurse -Force
           # Replace with Zensical, for example:
           # zensical build --output _site
 
       - name: Publish live content to gh-pages root
-        run: bash scripts/publish-main.sh _site
+        shell: pwsh
+        run: ./scripts/publish-main.ps1 -BuildDir _site
