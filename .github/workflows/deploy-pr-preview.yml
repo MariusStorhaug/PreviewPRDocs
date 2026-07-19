@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: write
-  environments: write
+  deployments: write
   pull-requests: write
 
 concurrency:
@@ -94,11 +94,19 @@ jobs:
         with:
           script: |
             const environmentName = `pr-preview-${context.issue.number}`;
-            await github.request("DELETE /repos/{owner}/{repo}/environments/{environment_name}", {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              environment_name: environmentName
-            });
+            try {
+              await github.request("DELETE /repos/{owner}/{repo}/environments/{environment_name}", {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                environment_name: environmentName
+              });
+            } catch (error) {
+              if (error.status === 404) {
+                core.info(`Environment '${environmentName}' was already deleted.`);
+              } else {
+                throw error;
+              }
+            }
 
       - name: Comment preview removed
         uses: actions/github-script@v7
